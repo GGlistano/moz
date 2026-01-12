@@ -198,9 +198,10 @@ ${orderIdLine}📋 *Dados do Cliente:*
       } else {
         // Em desktop, abrir em nova aba
         window.open(whatsappUrl, '_blank');
-        // Restaurar botão após abrir (desktop apenas)
-        setTimeout(() => setIsSubmitting(false), 2000);
       }
+
+      // Restaurar botão após 15 segundos como fallback
+      setTimeout(() => setIsSubmitting(false), 15000);
     } catch (error) {
       console.error('Erro ao processar:', error);
       setIsSubmitting(false);
