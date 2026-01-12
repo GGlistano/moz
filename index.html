@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Moz Txeneca</title>
+
+    <!-- Open Graph (sem imagem) -->
+    <meta property="og:title" content="Moz Txeneca" />
+    <meta property="og:description" content="Solução rápida e simples de crédito." />
+    <meta property="og:type" content="website" />
+
+    <!-- Twitter / X (sem imagem) -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Moz Txeneca" />
+    <meta name="twitter:description" content="Solução rápida e simples de crédito." />
+
+    <!-- Vimeo Player -->
+    <script src="https://player.vimeo.com/api/player.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+(function() {
+  const publicKey = 'pk_6nrsbjg72cm';
+  const supabaseUrl = 'https://kqpggpnjfnjysyzsaeyn.supabase.co';
+  const storageKey = 'wt_utm_data';
+
+  function captureUTMsOnLoad() {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        return;
+      }
+    } catch (e) {
+      console.warn('Erro ao acessar localStorage:', e);
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const utmData = {
+      utm_source: params.get('utm_source'),
+      utm_campaign: params.get('utm_campaign'),
+      utm_medium: params.get('utm_medium'),
+      utm_content: params.get('utm_content'),
+      utm_term: params.get('utm_term'),
+      fbclid: params.get('fbclid')
+    };
+
+    const hasAnyParam = Object.values(utmData).some(v => v !== null);
+
+    if (hasAnyParam) {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(utmData));
+      } catch (e) {
+        console.warn('Erro ao salvar UTMs:', e);
+      }
+    }
+  }
+
+  function getStoredUTMs() {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.warn('Erro ao recuperar UTMs:', e);
+    }
+
+    return {
+      utm_source: null,
+      utm_campaign: null,
+      utm_medium: null,
+      utm_content: null,
+      utm_term: null,
+      fbclid: null
+    };
+  }
+
+  async function captureData(phone, nome, email) {
+    const params = getStoredUTMs();
+    try {
+      const response = await fetch(supabaseUrl + '/functions/v1/capture-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          public_key: publicKey,
+          phone: phone,
+          nome: nome,
+          email: email,
+          ...params
+        })
+      });
+      const data = await response.json();
+      return data.order_id;
+    } catch (error) {
+      console.error('Erro ao capturar lead:', error);
+      return null;
+    }
+  }
+
+  captureUTMsOnLoad();
+
+  window.captureWhatsAppLead = captureData;
+})();
+</script>
+    <script
+  src="https://cdn.utmify.com.br/scripts/utms/latest.js"
+  data-utmify-prevent-xcod-sck
+  data-utmify-prevent-subids
+  async
+  defer
+></script>
+  </body>
+</html>
