@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, Eye, EyeOff, Check, Upload, AlertCircle } from 'lucide-react';
+import { Clock, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
 import Footer from '../components/Footer';
 
 declare global {
@@ -63,8 +63,7 @@ export default function LoanApplicationPage() {
     houseNumber: '',
     workSector: '',
     loanAmount: '',
-    idFront: null as File | null,
-    idBack: null as File | null,
+    monthlyIncome: '',
   });
 
   const provinces = [
@@ -111,22 +110,6 @@ export default function LoanApplicationPage() {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: 'idFront' | 'idBack') => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors(prev => ({ ...prev, [fieldName]: 'O arquivo deve ter no máximo 5MB' }));
-        return;
-      }
-      const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-      if (!validTypes.includes(file.type)) {
-        setErrors(prev => ({ ...prev, [fieldName]: 'Apenas arquivos JPG, PNG ou PDF são permitidos' }));
-        return;
-      }
-      setFormData(prev => ({ ...prev, [fieldName]: file }));
-      setErrors(prev => ({ ...prev, [fieldName]: '' }));
-    }
-  };
 
   const handleStep1Continue = (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,21 +140,6 @@ export default function LoanApplicationPage() {
 
   const handleStep3Submit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.idFront) {
-      newErrors.idFront = 'Por favor, anexe a frente do BI';
-    }
-
-    if (!formData.idBack) {
-      newErrors.idBack = 'Por favor, anexe o verso do BI';
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
     setErrors({});
     setCurrentStep(4);
   };
@@ -212,8 +180,6 @@ ${orderIdLine}📋 *Dados do Cliente:*
 • Prazo: ${loanDetails.termMonths} meses
 • Parcela Estimada: ~${loanDetails.monthlyPayment.toLocaleString('pt-MZ')} MT/mês
 • Forma de Pagamento: Mensal
-
-📎 Documentos anexados: BI Frente e Verso
 
 📌 O pagamento da taxa deve ser feito com o mesmo número informado.`;
 
@@ -562,7 +528,7 @@ ${orderIdLine}📋 *Dados do Cliente:*
             <>
               <div className="mb-8 text-center">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Valor do Empréstimo</h2>
-                <p className="text-gray-600 text-sm">Selecione o valor e anexe seus documentos</p>
+                <p className="text-gray-600 text-sm">Selecione o valor e informe sua renda mensal</p>
               </div>
 
               <form onSubmit={handleStep3Submit} className="space-y-6">
@@ -634,80 +600,21 @@ ${orderIdLine}📋 *Dados do Cliente:*
 
                 <div>
                   <label className="block text-gray-900 font-medium mb-2">
-                    Documentos (BI) <span className="text-red-500">*</span>
+                    Renda Mensal Atual <span className="text-red-500">*</span>
                   </label>
-
-                  <div className="space-y-4">
-                    <div className={`border-2 border-dashed rounded-lg p-8 text-center transition-all ${
-                      formData.idFront
-                        ? 'border-green-500 bg-green-50'
-                        : errors.idFront
-                        ? 'border-red-500 bg-red-50'
-                        : 'border-gray-300 hover:border-orange-500'
-                    }`}>
-                      <input
-                        type="file"
-                        id="idFront"
-                        accept="image/jpeg,image/png,application/pdf"
-                        onChange={(e) => handleFileChange(e, 'idFront')}
-                        className="hidden"
-                      />
-                      <label htmlFor="idFront" className="cursor-pointer">
-                        {formData.idFront ? (
-                          <div className="flex items-center justify-center gap-2 mb-3">
-                            <Check className="w-8 h-8 text-green-600" />
-                          </div>
-                        ) : (
-                          <Upload className="w-8 h-8 text-gray-400 mx-auto mb-3" />
-                        )}
-                        <p className="text-gray-900 font-medium mb-1">BI - Frente</p>
-                        <p className="text-gray-500 text-sm">JPG, PNG ou PDF (máx. 5MB)</p>
-                        {formData.idFront && (
-                          <p className="text-green-600 text-sm mt-2 font-medium">
-                            {formData.idFront.name}
-                          </p>
-                        )}
-                      </label>
-                      {errors.idFront && (
-                        <p className="text-red-500 text-sm mt-2">{errors.idFront}</p>
-                      )}
-                    </div>
-
-                    <div className={`border-2 border-dashed rounded-lg p-8 text-center transition-all ${
-                      formData.idBack
-                        ? 'border-green-500 bg-green-50'
-                        : errors.idBack
-                        ? 'border-red-500 bg-red-50'
-                        : 'border-gray-300 hover:border-orange-500'
-                    }`}>
-                      <input
-                        type="file"
-                        id="idBack"
-                        accept="image/jpeg,image/png,application/pdf"
-                        onChange={(e) => handleFileChange(e, 'idBack')}
-                        className="hidden"
-                      />
-                      <label htmlFor="idBack" className="cursor-pointer">
-                        {formData.idBack ? (
-                          <div className="flex items-center justify-center gap-2 mb-3">
-                            <Check className="w-8 h-8 text-green-600" />
-                          </div>
-                        ) : (
-                          <Upload className="w-8 h-8 text-gray-400 mx-auto mb-3" />
-                        )}
-                        <p className="text-gray-900 font-medium mb-1">BI - Verso</p>
-                        <p className="text-gray-500 text-sm">JPG, PNG ou PDF (máx. 5MB)</p>
-                        {formData.idBack && (
-                          <p className="text-green-600 text-sm mt-2 font-medium">
-                            {formData.idBack.name}
-                          </p>
-                        )}
-                      </label>
-                      {errors.idBack && (
-                        <p className="text-red-500 text-sm mt-2">{errors.idBack}</p>
-                      )}
-                    </div>
-                  </div>
+                  <select
+                    name="monthlyIncome"
+                    value={formData.monthlyIncome}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none bg-white"
+                    required
+                  >
+                    <option value="">Selecione sua faixa de renda</option>
+                    <option value="5000-10000">5.000 MT a 10.000 MT</option>
+                    <option value="10000-50000">10.000 MT a 50.000 MT</option>
+                    <option value="50000-100000">50.000 MT a 100.000 MT</option>
+                    <option value="100000+">Mais de 100.000 MT</option>
+                  </select>
                 </div>
 
                 <div className="flex gap-4">
@@ -841,26 +748,6 @@ ${orderIdLine}📋 *Dados do Cliente:*
                         <p className="text-gray-600 text-xs">Taxa de Inscrição</p>
                         <p className="text-orange-600 font-bold">{getLoanDetails(formData.loanAmount)?.registrationFee.toLocaleString('pt-MZ')} MT</p>
                       </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Documentos */}
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-6 h-6 bg-orange-100 rounded flex items-center justify-center">
-                      <span className="text-orange-500 text-sm">📎</span>
-                    </div>
-                    <h3 className="font-bold text-gray-900">Documentos</h3>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-green-600">
-                      <Check className="w-5 h-5" />
-                      <span className="text-sm font-medium">BI Frente anexado</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-green-600">
-                      <Check className="w-5 h-5" />
-                      <span className="text-sm font-medium">BI Verso anexado</span>
                     </div>
                   </div>
                 </div>
