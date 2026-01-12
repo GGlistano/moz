@@ -599,22 +599,62 @@ ${orderIdLine}📋 *Dados do Cliente:*
                 )}
 
                 <div>
-                  <label className="block text-gray-900 font-medium mb-2">
+                  <label className="block text-gray-900 font-medium mb-4">
                     Renda Mensal Atual <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    name="monthlyIncome"
-                    value={formData.monthlyIncome}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none bg-white"
-                    required
-                  >
-                    <option value="">Selecione sua faixa de renda</option>
-                    <option value="5000-10000">5.000 MT a 10.000 MT</option>
-                    <option value="10000-50000">10.000 MT a 50.000 MT</option>
-                    <option value="50000-100000">50.000 MT a 100.000 MT</option>
-                    <option value="100000+">Mais de 100.000 MT</option>
-                  </select>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, monthlyIncome: '5000-10000' }))}
+                      className={`p-6 rounded-xl border-2 transition-all font-semibold text-center ${
+                        formData.monthlyIncome === '5000-10000'
+                          ? 'bg-orange-500 border-orange-500 text-white shadow-lg scale-105'
+                          : 'bg-white border-gray-300 text-gray-700 hover:border-orange-500'
+                      }`}
+                    >
+                      <div className="text-lg">5.000 MT</div>
+                      <div className="text-sm opacity-90">a 10.000 MT</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, monthlyIncome: '10000-50000' }))}
+                      className={`p-6 rounded-xl border-2 transition-all font-semibold text-center ${
+                        formData.monthlyIncome === '10000-50000'
+                          ? 'bg-orange-500 border-orange-500 text-white shadow-lg scale-105'
+                          : 'bg-white border-gray-300 text-gray-700 hover:border-orange-500'
+                      }`}
+                    >
+                      <div className="text-lg">10.000 MT</div>
+                      <div className="text-sm opacity-90">a 50.000 MT</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, monthlyIncome: '50000-100000' }))}
+                      className={`p-6 rounded-xl border-2 transition-all font-semibold text-center ${
+                        formData.monthlyIncome === '50000-100000'
+                          ? 'bg-orange-500 border-orange-500 text-white shadow-lg scale-105'
+                          : 'bg-white border-gray-300 text-gray-700 hover:border-orange-500'
+                      }`}
+                    >
+                      <div className="text-lg">50.000 MT</div>
+                      <div className="text-sm opacity-90">a 100.000 MT</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, monthlyIncome: '100000+' }))}
+                      className={`p-6 rounded-xl border-2 transition-all font-semibold text-center ${
+                        formData.monthlyIncome === '100000+'
+                          ? 'bg-orange-500 border-orange-500 text-white shadow-lg scale-105'
+                          : 'bg-white border-gray-300 text-gray-700 hover:border-orange-500'
+                      }`}
+                    >
+                      <div className="text-lg">Mais de</div>
+                      <div className="text-sm opacity-90">100.000 MT</div>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex gap-4">
