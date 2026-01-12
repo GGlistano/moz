@@ -144,35 +144,46 @@ export default function LoanApplicationPage() {
     setCurrentStep(4);
   };
 
-  const handleWhatsAppContact = () => {
+  const handleWhatsAppContact = async () => {
     const loanDetails = getLoanDetails(formData.loanAmount);
     if (!loanDetails) return;
 
-    const message = `Olá! Gostaria de solicitar um empréstimo.
+    let orderId = null;
+    if (typeof window.captureWhatsAppLead === 'function') {
+      try {
+        orderId = await window.captureWhatsAppLead(
+          formData.phoneNumber,
+          formData.fullName,
+          ''
+        );
+      } catch (error) {
+        console.error('Erro ao capturar lead:', error);
+      }
+    }
 
-*Dados Pessoais:*
-Nome: ${formData.fullName}
-Telefone: ${formData.phoneNumber}
-Província: ${formData.province}
-Bairro: ${formData.neighborhood}
-Sector: ${formData.workSector}
+    const orderIdLine = orderId ? `Pedido número: ${orderId}\n\n` : '';
 
-*Empréstimo:*
-Valor: ${loanDetails.amount.toLocaleString('pt-MZ')} MT
-Taxa de Inscrição: ${loanDetails.registrationFee.toLocaleString('pt-MZ')} MT
-Prazo: ${loanDetails.termMonths} meses
-Parcela: ${loanDetails.monthlyPayment.toLocaleString('pt-MZ')} MT/mês`;
+    const message = `🏡 *NOVA SOLICITAÇÃO DE EMPRÉSTIMO - MOZ TXENECA*
+${orderIdLine}📋 *Dados do Cliente:*
+• Nome: ${formData.fullName}
+• Contacto: ${formData.phoneNumber}
+• Província: ${formData.province}
+• Bairro: ${formData.neighborhood}
+• Quarteirão: ${formData.block}
+• Nº Casa: ${formData.houseNumber}
+• Sector de Trabalho: ${formData.workSector}
+
+💰 *Detalhes do Empréstimo:*
+• Valor Solicitado: ${loanDetails.amount.toLocaleString('pt-MZ')} MT
+• Taxa de Inscrição: ${loanDetails.registrationFee.toLocaleString('pt-MZ')} MT
+• Juros Mensais: ${loanDetails.interestRate}%
+• Prazo: ${loanDetails.termMonths} meses
+• Parcela Estimada: ~${loanDetails.monthlyPayment.toLocaleString('pt-MZ')} MT/mês
+• Forma de Pagamento: Mensal
+
+📌 O pagamento da taxa deve ser feito com o mesmo número informado.`;
 
     const whatsappUrl = `https://wa.me/258858322793?text=${encodeURIComponent(message)}`;
-
-    // Capturar lead em background (não bloqueia o WhatsApp)
-    if (typeof window.captureWhatsAppLead === 'function') {
-      window.captureWhatsAppLead(
-        formData.phoneNumber,
-        formData.fullName,
-        ''
-      ).catch(error => console.error('Erro ao capturar lead:', error));
-    }
 
     // Detectar se é mobile
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
