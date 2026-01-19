@@ -28,50 +28,125 @@
 (function() {
   const publicKey = 'pk_6nrsbjg72cm';
   const supabaseUrl = 'https://kqpggpnjfnjysyzsaeyn.supabase.co';
-  const storageKey = 'wt_utm_data';
+  const STORAGE_KEY = 'wt_attr_v2';
+  const TTL_MS = 604800000; // 7 dias
 
-  function captureUTMsOnLoad() {
+  function generateUUID() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
+  function getCookie(name) {
     try {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        return;
-      }
-    } catch (e) {
-      console.warn('Erro ao acessar localStorage:', e);
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    const utmData = {
-      utm_source: params.get('utm_source'),
-      utm_campaign: params.get('utm_campaign'),
-      utm_medium: params.get('utm_medium'),
-      utm_content: params.get('utm_content'),
-      utm_term: params.get('utm_term'),
-      fbclid: params.get('fbclid')
-    };
-
-    const hasAnyParam = Object.values(utmData).some(v => v !== null);
-
-    if (hasAnyParam) {
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(utmData));
-      } catch (e) {
-        console.warn('Erro ao salvar UTMs:', e);
-      }
+      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return match ? match[2] : null;
+    } catch {
+      return null;
     }
   }
 
-  function getStoredUTMs() {
-    try {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch (e) {
-      console.warn('Erro ao recuperar UTMs:', e);
-    }
+  function buildFbc(fbclid) {
+    if (!fbclid) return null;
+    const ts = Math.floor(Date.now() / 1000);
+    return 'fb.1.' + ts + '.' + fbclid;
+  }
 
+  function safeGet(storage, key) { try { return storage.getItem(key); } catch { return null; } }
+  function safeSet(storage, key, value) { try { storage.setItem(key, value); return true; } catch { return false; } }
+  function safeRemove(storage, key) { try { storage.removeItem(key); } catch {} }
+
+  function clearStorage() {
+    safeRemove(localStorage, STORAGE_KEY);
+    safeRemove(sessionStorage, STORAGE_KEY);
+    try {
+      if (window.name && window.name.startsWith(STORAGE_KEY + '=')) window.name = '';
+    } catch {}
+  }
+
+  function readStorage() {
+    const ls = safeGet(localStorage, STORAGE_KEY);
+    if (ls) return ls;
+
+    const ss = safeGet(sessionStorage, STORAGE_KEY);
+    if (ss) return ss;
+
+    try {
+      if (window.name && window.name.startsWith(STORAGE_KEY + '=')) {
+        return window.name.slice((STORAGE_KEY + '=').length) || null;
+      }
+    } catch {}
+    return null;
+  }
+
+  function writeStorage(value) {
+    if (safeSet(localStorage, STORAGE_KEY, value)) return true;
+    if (safeSet(sessionStorage, STORAGE_KEY, value)) return true;
+    try {
+      window.name = STORAGE_KEY + '=' + value;
+      return true;
+    } catch {}
+    return false;
+  }
+
+  function getURLParams() {
+    const params = new URLSearchParams(window.location.search);
+    const pick = function(key) {
+      const value = params.get(key);
+      if (value == null) return null;
+      const trimmed = String(value).trim();
+      return trimmed === '' ? null : trimmed;
+    };
     return {
+      utm_source: pick('utm_source'),
+      utm_campaign: pick('utm_campaign'),
+      utm_medium: pick('utm_medium'),
+      utm_content: pick('utm_content'),
+      utm_term: pick('utm_term'),
+      fbclid: pick('fbclid')
+    };
+  }
+
+  function loadState() {
+    const raw = readStorage();
+    if (!raw) return null;
+
+    try {
+      const state = JSON.parse(raw);
+      const now = Date.now();
+      if (state.last_seen && (now - state.last_seen > TTL_MS)) {
+        clearStorage();
+        return null;
+      }
+      return state;
+    } catch {
+      clearStorage();
+      return null;
+    }
+  }
+
+  function saveState(state) {
+    writeStorage(JSON.stringify(state));
+  }
+
+  function mergeState(prev, incoming) {
+    const now = Date.now();
+    const base = prev || {
+      attribution_id: generateUUID(),
+      first_seen: now,
+      last_seen: now,
+
+      first_landing_page: window.location.href,
+      first_referrer: document.referrer || null,
+
+      last_landing_page: window.location.href,
+      last_referrer: document.referrer || null,
+
+      user_agent: navigator.userAgent,
+
       utm_source: null,
       utm_campaign: null,
       utm_medium: null,
@@ -79,10 +154,63 @@
       utm_term: null,
       fbclid: null
     };
+
+    return {
+      attribution_id: base.attribution_id,
+      first_seen: base.first_seen,
+      last_seen: now,
+
+      first_landing_page: base.first_landing_page,
+      first_referrer: base.first_referrer,
+
+      last_landing_page: window.location.href,
+      last_referrer: document.referrer || base.last_referrer || null,
+
+      user_agent: navigator.userAgent,
+
+      utm_source: incoming.utm_source !== null ? incoming.utm_source : base.utm_source,
+      utm_campaign: incoming.utm_campaign !== null ? incoming.utm_campaign : base.utm_campaign,
+      utm_medium: incoming.utm_medium !== null ? incoming.utm_medium : base.utm_medium,
+      utm_content: incoming.utm_content !== null ? incoming.utm_content : base.utm_content,
+      utm_term: incoming.utm_term !== null ? incoming.utm_term : base.utm_term,
+      fbclid: incoming.fbclid !== null ? incoming.fbclid : base.fbclid
+    };
+  }
+
+  async function upsertAttribution(state) {
+    try {
+      await fetch(supabaseUrl + '/functions/v1/save-attribution', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(state)
+      });
+    } catch (error) {
+      console.error('Erro ao salvar atribuição:', error);
+    }
+  }
+
+  function initAttribution() {
+    const prev = loadState();
+    const incoming = getURLParams();
+    const state = mergeState(prev, incoming);
+
+    saveState(state);
+
+    const hasIncomingParams = Object.values(incoming).some(function(v) { return v !== null; });
+    if (!prev || hasIncomingParams) upsertAttribution(state);
+
+    return state;
   }
 
   async function captureData(phone, nome, email) {
-    const params = getStoredUTMs();
+    const state = loadState() || initAttribution();
+
+    const fbp = getCookie('_fbp');
+    let fbc = getCookie('_fbc');
+    if (!fbc && state.fbclid) {
+      fbc = buildFbc(state.fbclid);
+    }
+
     try {
       const response = await fetch(supabaseUrl + '/functions/v1/capture-lead', {
         method: 'POST',
@@ -92,28 +220,36 @@
           phone: phone,
           nome: nome,
           email: email,
-          ...params
+          attribution_id: state.attribution_id,
+
+          utm_source: state.utm_source,
+          utm_campaign: state.utm_campaign,
+          utm_medium: state.utm_medium,
+          utm_content: state.utm_content,
+          utm_term: state.utm_term,
+          fbclid: state.fbclid,
+
+          fbp: fbp,
+          fbc: fbc,
+
+          first_landing_page: state.first_landing_page,
+          first_referrer: state.first_referrer,
+          last_landing_page: state.last_landing_page,
+          last_referrer: state.last_referrer
         })
       });
+
       const data = await response.json();
-      return data.order_id;
+      return data.order_id || null;
     } catch (error) {
       console.error('Erro ao capturar lead:', error);
       return null;
     }
   }
 
-  captureUTMsOnLoad();
-
+  initAttribution();
   window.captureWhatsAppLead = captureData;
 })();
 </script>
-    <script
-  src="https://cdn.utmify.com.br/scripts/utms/latest.js"
-  data-utmify-prevent-xcod-sck
-  data-utmify-prevent-subids
-  async
-  defer
-></script>
   </body>
 </html>
