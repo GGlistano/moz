@@ -6,7 +6,8 @@ import Footer from '../components/Footer';
 const API_CONFIG = {
   url: "https://ejfdfllxdbkkhxrmmhkw.supabase.co/functions/v1/create-ticket",
   key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqZmRmbGx4ZGJra2h4cm1taGt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MzMzNDUsImV4cCI6MjA4NDQwOTM0NX0.ffnuENnSmSL-0o_l6EWYqBS0jm-UAq4P8wPPwUTEpXo",
-  funnelSlug: "emprestimo"
+  funnelSlug: "emprestimo",
+  chatBaseUrl: "https://whatsapp-lead-funnel-lst8.bolt.host"
 };
 
 interface LoanTier {
@@ -200,11 +201,15 @@ export default function LoanApplicationPage() {
 
       console.log('✅ Resposta completa da API:', resultado);
 
-      if (resultado.success && resultado.chat_url) {
-        console.log('🔗 Redirecionando para:', resultado.chat_url);
-        window.location.href = resultado.chat_url;
+      if (resultado.success && resultado.ticket_code) {
+        // Construir a URL do chat localmente
+        const chatUrl = `${API_CONFIG.chatBaseUrl}/chat/${API_CONFIG.funnelSlug}?ticket=${resultado.ticket_code}`;
+        console.log('🔗 Redirecionando para:', chatUrl);
+        console.log('🎫 Ticket:', resultado.ticket_code);
+        console.log('⏰ Expira em:', resultado.expires_at);
+        window.location.href = chatUrl;
       } else {
-        const mensagemErro = resultado.error || 'Resposta da API não contém chat_url válido';
+        const mensagemErro = resultado.error || 'Resposta da API não contém ticket_code válido';
         console.error('❌ Erro na resposta:', mensagemErro);
         setApiError(mensagemErro);
         setIsSubmitting(false);
