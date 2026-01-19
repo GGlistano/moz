@@ -199,7 +199,8 @@
         const API_CONFIG = {
             url: 'https://ejfdfllxdbkkhxrmmhkw.supabase.co/functions/v1/create-ticket',
             apiKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqZmRmbGx4ZGJra2h4cm1taGt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MzMzNDUsImV4cCI6MjA4NDQwOTM0NX0.ffnuENnSmSL-0o_l6EWYqBS0jm-UAq4P8wPPwUTEpXo',
-            funnelSlug: 'emprestimo' // ALTERE AQUI PARA O SLUG DO SEU FUNIL
+            funnelSlug: 'emprestimo', // ALTERE AQUI PARA O SLUG DO SEU FUNIL
+            chatBaseUrl: 'https://whatsapp-lead-funnel-lst8.bolt.host' // ALTERE PARA SEU DOMÍNIO EM PRODUÇÃO
         };
 
         // Atualizar display da configuração
@@ -259,9 +260,15 @@
                     throw new Error(result.error || 'Erro ao criar ticket');
                 }
 
-                // Sucesso! Redirecionar para o chat
-                console.log('✅ Redirecionando para:', result.chat_url);
-                window.location.href = result.chat_url;
+                // Construir a URL do chat localmente
+                const chatUrl = `${API_CONFIG.chatBaseUrl}/chat/${API_CONFIG.funnelSlug}?ticket=${result.ticket_code}`;
+
+                console.log('✅ Redirecionando para:', chatUrl);
+                console.log('🎫 Ticket:', result.ticket_code);
+                console.log('⏰ Expira em:', result.expires_at);
+
+                // Redirecionar para o chat
+                window.location.href = chatUrl;
 
             } catch (error) {
                 console.error('❌ Erro:', error);
