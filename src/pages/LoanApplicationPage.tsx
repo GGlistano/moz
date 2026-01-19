@@ -185,6 +185,9 @@ export default function LoanApplicationPage() {
 
       const resultado = await response.json();
 
+      console.log('Resposta da API:', resultado);
+      console.log('Chat URL recebida:', resultado.chat_url);
+
       if (resultado.success) {
         window.location.href = resultado.chat_url;
       } else {
