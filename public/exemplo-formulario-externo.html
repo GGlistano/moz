@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exemplo - Formulário de Empréstimo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #1a202c;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #718096;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #2d3748;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 15px;
+            color: #667eea;
+            font-size: 14px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            display: none;
+            background: #fed7d7;
+            color: #c53030;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .config-info {
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-size: 13px;
+            color: #4a5568;
+        }
+
+        .config-info strong {
+            color: #2d3748;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Solicitar Empréstimo</h1>
+        <p class="subtitle">Preencha seus dados para começar</p>
+
+        <div class="config-info">
+            <strong>⚙️ Configuração Atual:</strong><br>
+            Funil: <code id="currentFunnel">emprestimo</code>
+        </div>
+
+        <form id="leadForm">
+            <div class="form-group">
+                <label for="nome">Nome Completo *</label>
+                <input type="text" id="nome" name="nome" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">E-mail *</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="telefone">Telefone/WhatsApp *</label>
+                <input type="tel" id="telefone" name="telefone" required>
+            </div>
+
+            <div class="form-group">
+                <label for="valor">Valor Desejado</label>
+                <input type="text" id="valor" name="valor" placeholder="Ex: R$ 10.000">
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                Continuar no Chat
+            </button>
+
+            <div class="loading" id="loading">
+                <span class="loading-spinner"></span>
+                Criando seu atendimento...
+            </div>
+
+            <div class="error" id="error"></div>
+        </form>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURAÇÃO DA API
+        // ============================================
+        const API_CONFIG = {
+            url: 'https://ejfdfllxdbkkhxrmmhkw.supabase.co/functions/v1/create-ticket',
+            apiKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqZmRmbGx4ZGJra2h4cm1taGt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MzMzNDUsImV4cCI6MjA4NDQwOTM0NX0.ffnuENnSmSL-0o_l6EWYqBS0jm-UAq4P8wPPwUTEpXo',
+            funnelSlug: 'emprestimo' // ALTERE AQUI PARA O SLUG DO SEU FUNIL
+        };
+
+        // Atualizar display da configuração
+        document.getElementById('currentFunnel').textContent = API_CONFIG.funnelSlug;
+
+        // ============================================
+        // LÓGICA DO FORMULÁRIO
+        // ============================================
+        const form = document.getElementById('leadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+        const errorDiv = document.getElementById('error');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault(); // IMPORTANTE: Prevenir o submit tradicional do formulário
+
+            // Limpar erros anteriores
+            errorDiv.classList.remove('show');
+
+            // Mostrar loading
+            submitBtn.disabled = true;
+            loading.classList.add('show');
+
+            try {
+                // Coletar dados do formulário
+                const formData = new FormData(form);
+                const leadData = {};
+                formData.forEach((value, key) => {
+                    leadData[key] = value;
+                });
+
+                console.log('📤 Enviando dados:', {
+                    funnel_slug: API_CONFIG.funnelSlug,
+                    lead_data: leadData
+                });
+
+                // Fazer chamada para a API
+                const response = await fetch(API_CONFIG.url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_CONFIG.apiKey}`,
+                        'apikey': API_CONFIG.apiKey
+                    },
+                    body: JSON.stringify({
+                        funnel_slug: API_CONFIG.funnelSlug,
+                        lead_data: leadData,
+                        expiration_hours: 24
+                    })
+                });
+
+                const result = await response.json();
+
+                console.log('📥 Resposta da API:', result);
+
+                if (!response.ok || !result.success) {
+                    throw new Error(result.error || 'Erro ao criar ticket');
+                }
+
+                // Sucesso! Redirecionar para o chat
+                console.log('✅ Redirecionando para:', result.chat_url);
+                window.location.href = result.chat_url;
+
+            } catch (error) {
+                console.error('❌ Erro:', error);
+                errorDiv.textContent = `Erro: ${error.message}. Por favor, tente novamente.`;
+                errorDiv.classList.add('show');
+                submitBtn.disabled = false;
+                loading.classList.remove('show');
+            }
+        });
+
+        // Formatação de telefone (opcional)
+        document.getElementById('telefone').addEventListener('input', (e) => {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.slice(0, 11);
+
+            if (value.length > 10) {
+                value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+            } else if (value.length > 6) {
+                value = value.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+            } else if (value.length > 2) {
+                value = value.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+            } else if (value.length > 0) {
+                value = value.replace(/(\d{0,2})/, '($1');
+            }
+
+            e.target.value = value;
+        });
+    </script>
+</body>
+</html>
