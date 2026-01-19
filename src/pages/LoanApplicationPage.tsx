@@ -169,6 +169,12 @@ export default function LoanApplicationPage() {
       forma_pagamento: 'Mensal',
     };
 
+    console.log('📤 Enviando dados para API:', {
+      funnel_slug: API_CONFIG.funnelSlug,
+      lead_data: dadosDoLead,
+      expiration_hours: 24
+    });
+
     try {
       const response = await fetch(API_CONFIG.url, {
         method: 'POST',
@@ -179,25 +185,37 @@ export default function LoanApplicationPage() {
         },
         body: JSON.stringify({
           funnel_slug: API_CONFIG.funnelSlug,
-          lead_data: dadosDoLead
+          lead_data: dadosDoLead,
+          expiration_hours: 24
         })
       });
 
+      console.log('📥 Status da resposta:', response.status, response.statusText);
+
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status} - ${response.statusText}`);
+      }
+
       const resultado = await response.json();
 
-      console.log('Resposta da API:', resultado);
-      console.log('Chat URL recebida:', resultado.chat_url);
+      console.log('✅ Resposta completa da API:', resultado);
 
-      if (resultado.success) {
+      if (resultado.success && resultado.chat_url) {
+        console.log('🔗 Redirecionando para:', resultado.chat_url);
         window.location.href = resultado.chat_url;
       } else {
-        setApiError(resultado.error || 'Erro ao processar solicitação. Tente novamente.');
+        const mensagemErro = resultado.error || 'Resposta da API não contém chat_url válido';
+        console.error('❌ Erro na resposta:', mensagemErro);
+        setApiError(mensagemErro);
         setIsSubmitting(false);
       }
 
     } catch (error) {
-      console.error('Erro ao conectar:', error);
-      setApiError('Erro ao conectar com o sistema. Verifique sua internet e tente novamente.');
+      console.error('❌ Erro ao conectar com API:', error);
+      const mensagemErro = error instanceof Error
+        ? error.message
+        : 'Erro desconhecido ao conectar com o sistema';
+      setApiError(`Erro: ${mensagemErro}. Verifique sua internet e tente novamente.`);
       setIsSubmitting(false);
     }
   };
