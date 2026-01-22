@@ -25,12 +25,12 @@
   <body>
     <div id="root"></div>
 
-    <script>
+<script>
 (function() {
-  const publicKey = 'pk_6nrsbjg72cm';
-  const supabaseUrl = 'https://kqpggpnjfnjysyzsaeyn.supabase.co';
+  const FUNNEL_SLUG = 'emprestimo';
+  const SUPABASE_URL = 'https://ejfdfllxdbkkhxrmmhkw.supabase.co';
   const STORAGE_KEY = 'wt_attr_v2';
-  const TTL_MS = 604800000; // 7 dias
+  const TTL_MS = 604800000;
 
   function generateUUID() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
@@ -71,10 +71,8 @@
   function readStorage() {
     const ls = safeGet(localStorage, STORAGE_KEY);
     if (ls) return ls;
-
     const ss = safeGet(sessionStorage, STORAGE_KEY);
     if (ss) return ss;
-
     try {
       if (window.name && window.name.startsWith(STORAGE_KEY + '=')) {
         return window.name.slice((STORAGE_KEY + '=').length) || null;
@@ -114,7 +112,6 @@
   function loadState() {
     const raw = readStorage();
     if (!raw) return null;
-
     try {
       const state = JSON.parse(raw);
       const now = Date.now();
@@ -139,15 +136,11 @@
       attribution_id: generateUUID(),
       first_seen: now,
       last_seen: now,
-
       first_landing_page: window.location.href,
       first_referrer: document.referrer || null,
-
       last_landing_page: window.location.href,
       last_referrer: document.referrer || null,
-
       user_agent: navigator.userAgent,
-
       utm_source: null,
       utm_campaign: null,
       utm_medium: null,
@@ -160,15 +153,11 @@
       attribution_id: base.attribution_id,
       first_seen: base.first_seen,
       last_seen: now,
-
       first_landing_page: base.first_landing_page,
       first_referrer: base.first_referrer,
-
       last_landing_page: window.location.href,
       last_referrer: document.referrer || base.last_referrer || null,
-
       user_agent: navigator.userAgent,
-
       utm_source: incoming.utm_source !== null ? incoming.utm_source : base.utm_source,
       utm_campaign: incoming.utm_campaign !== null ? incoming.utm_campaign : base.utm_campaign,
       utm_medium: incoming.utm_medium !== null ? incoming.utm_medium : base.utm_medium,
@@ -178,34 +167,16 @@
     };
   }
 
-  async function upsertAttribution(state) {
-    try {
-      await fetch(supabaseUrl + '/functions/v1/save-attribution', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(state)
-      });
-    } catch (error) {
-      console.error('Erro ao salvar atribuição:', error);
-    }
-  }
-
   function initAttribution() {
     const prev = loadState();
     const incoming = getURLParams();
     const state = mergeState(prev, incoming);
-
     saveState(state);
-
-    const hasIncomingParams = Object.values(incoming).some(function(v) { return v !== null; });
-    if (!prev || hasIncomingParams) upsertAttribution(state);
-
     return state;
   }
 
-  async function captureData(phone, nome, email) {
+  async function captureFormSubmit(formData) {
     const state = loadState() || initAttribution();
-
     const fbp = getCookie('_fbp');
     let fbc = getCookie('_fbc');
     if (!fbc && state.fbclid) {
@@ -213,35 +184,31 @@
     }
 
     try {
-      const response = await fetch(supabaseUrl + '/functions/v1/capture-lead', {
+      const response = await fetch(SUPABASE_URL + '/functions/v1/create-ticket', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          public_key: publicKey,
-          phone: phone,
-          nome: nome,
-          email: email,
+          funnel_slug: FUNNEL_SLUG,
+          lead_data: formData,
           attribution_id: state.attribution_id,
-
           utm_source: state.utm_source,
           utm_campaign: state.utm_campaign,
           utm_medium: state.utm_medium,
           utm_content: state.utm_content,
           utm_term: state.utm_term,
           fbclid: state.fbclid,
-
           fbp: fbp,
           fbc: fbc,
-
           first_landing_page: state.first_landing_page,
           first_referrer: state.first_referrer,
           last_landing_page: state.last_landing_page,
-          last_referrer: state.last_referrer
+          last_referrer: state.last_referrer,
+          user_agent: state.user_agent
         })
       });
 
       const data = await response.json();
-      return data.order_id || null;
+      return data;
     } catch (error) {
       console.error('Erro ao capturar lead:', error);
       return null;
@@ -249,7 +216,7 @@
   }
 
   initAttribution();
-  window.captureWhatsAppLead = captureData;
+  window.captureFormSubmit = captureFormSubmit;
 })();
 </script>
   </body>
