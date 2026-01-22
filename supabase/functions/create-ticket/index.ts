@@ -11,6 +11,20 @@ interface CreateTicketRequest {
   funnel_slug: string;
   lead_data: Record<string, any>;
   expiration_hours?: number;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
+  fbclid?: string;
+  fbp?: string;
+  fbc?: string;
+  attribution_id?: string;
+  first_landing_page?: string;
+  first_referrer?: string;
+  last_landing_page?: string;
+  last_referrer?: string;
+  user_agent?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -27,7 +41,25 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const requestData: CreateTicketRequest = await req.json();
-    const { funnel_slug, lead_data, expiration_hours = 24 } = requestData;
+    const {
+      funnel_slug,
+      lead_data,
+      expiration_hours = 24,
+      utm_source,
+      utm_medium,
+      utm_campaign,
+      utm_content,
+      utm_term,
+      fbclid,
+      fbp,
+      fbc,
+      attribution_id,
+      first_landing_page,
+      first_referrer,
+      last_landing_page,
+      last_referrer,
+      user_agent
+    } = requestData;
 
     if (!funnel_slug) {
       return new Response(
@@ -57,7 +89,7 @@ Deno.serve(async (req: Request) => {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + expiration_hours);
 
-    // Criar ticket no banco
+    // Criar ticket no banco com dados de tracking
     const { data: ticket, error: ticketError } = await supabase
       .from("tickets")
       .insert({
@@ -66,6 +98,20 @@ Deno.serve(async (req: Request) => {
         lead_data: lead_data,
         status: "pending",
         expires_at: expiresAt.toISOString(),
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        utm_content,
+        utm_term,
+        fbclid,
+        fbp,
+        fbc,
+        attribution_id,
+        first_landing_page,
+        first_referrer,
+        last_landing_page,
+        last_referrer,
+        user_agent,
       })
       .select()
       .single();

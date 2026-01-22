@@ -170,11 +170,26 @@ export default function LoanApplicationPage() {
       forma_pagamento: 'Mensal',
     };
 
-    console.log('📤 Enviando dados para API:', {
+    // Ler dados de tracking do localStorage
+    let trackingData = {};
+    try {
+      const storedAttribution = localStorage.getItem('leadAttribution');
+      if (storedAttribution) {
+        trackingData = JSON.parse(storedAttribution);
+        console.log('📊 Dados de tracking encontrados:', trackingData);
+      }
+    } catch (error) {
+      console.warn('⚠️ Erro ao ler dados de tracking:', error);
+    }
+
+    const requestBody = {
       funnel_slug: API_CONFIG.funnelSlug,
       lead_data: dadosDoLead,
-      expiration_hours: 24
-    });
+      expiration_hours: 24,
+      ...trackingData
+    };
+
+    console.log('📤 Enviando dados para API:', requestBody);
 
     try {
       const response = await fetch(API_CONFIG.url, {
@@ -184,11 +199,7 @@ export default function LoanApplicationPage() {
           'Authorization': `Bearer ${API_CONFIG.key}`,
           'apikey': API_CONFIG.key
         },
-        body: JSON.stringify({
-          funnel_slug: API_CONFIG.funnelSlug,
-          lead_data: dadosDoLead,
-          expiration_hours: 24
-        })
+        body: JSON.stringify(requestBody)
       });
 
       console.log('📥 Status da resposta:', response.status, response.statusText);
