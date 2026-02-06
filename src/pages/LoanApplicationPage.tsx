@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
 import Footer from '../components/Footer';
+import { buildTrackedUrl } from '../lib/tracking';
 
 const API_CONFIG = {
   url: "https://ejfdfllxdbkkhxrmmhkw.supabase.co/functions/v1/create-ticket",
@@ -213,12 +214,12 @@ export default function LoanApplicationPage() {
       console.log('✅ Resposta completa da API:', resultado);
 
       if (resultado.success && resultado.ticket_code) {
-        // Construir a URL do chat localmente
-        const chatUrl = `${API_CONFIG.chatBaseUrl}/chat/${API_CONFIG.funnelSlug}?ticket=${resultado.ticket_code}`;
-        console.log('🔗 Redirecionando para:', chatUrl);
+        const baseUrl = `${API_CONFIG.chatBaseUrl}/chat/${API_CONFIG.funnelSlug}?ticket=${resultado.ticket_code}`;
+        const trackedUrl = buildTrackedUrl(baseUrl);
+        console.log('🔗 Redirecionando para:', trackedUrl);
         console.log('🎫 Ticket:', resultado.ticket_code);
         console.log('⏰ Expira em:', resultado.expires_at);
-        window.location.href = chatUrl;
+        window.location.href = trackedUrl;
       } else {
         const mensagemErro = resultado.error || 'Resposta da API não contém ticket_code válido';
         console.error('❌ Erro na resposta:', mensagemErro);

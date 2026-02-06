@@ -19,6 +19,28 @@
 
     <!-- Vimeo Player -->
     <script src="https://player.vimeo.com/api/player.js"></script>
+    <!-- UTM Tracking Capture -->
+    <script>
+      (function () {
+        const KEYS = [
+          'utm_source','utm_medium','utm_campaign','utm_content','utm_term',
+          'fbclid','gclid','ttclid','msclkid','utm_id','subid','click_id'
+        ];
+
+        const url = new URL(window.location.href);
+        const stored = {};
+
+        KEYS.forEach(k => {
+          const v = url.searchParams.get(k);
+          if (v) stored[k] = v;
+        });
+
+        if (Object.keys(stored).length) {
+          sessionStorage.setItem('leadAttribution', JSON.stringify(stored));
+          console.log('[TRACK] Capturado:', stored);
+        }
+      })();
+    </script>
     <!-- Meta Pixel Code -->
 <script>
 !function(f,b,e,v,n,t,s)
