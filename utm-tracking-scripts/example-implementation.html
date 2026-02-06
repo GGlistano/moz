@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exemplo de Implementação UTM</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        h2 { color: #666; margin-top: 30px; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        .code-block {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .step {
+            background: #e7f3ff;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        .step h3 { margin: 0 0 10px 0; color: #007bff; }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            border-left: 4px solid #28a745;
+        }
+        .data-viewer {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            font-family: monospace;
+            overflow-x: auto;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px 5px 5px 0;
+        }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Exemplo de Implementação UTM Cross-Domain</h1>
+
+        <h2>Cenário</h2>
+        <p>Você tem dois domínios:</p>
+        <ul>
+            <li><strong>Domínio 1:</strong> seu-site-origem.com (onde vêm os links com UTMs)</li>
+            <li><strong>Domínio 2:</strong> seu-site-destino.com (onde está o formulário/chat)</li>
+        </ul>
+
+        <h2>PASSO 1: No Domínio de Origem</h2>
+        <div class="step">
+            <h3>Adicione em seu-site-origem.com</h3>
+            <p>No arquivo HTML, adicione antes do closing tag &lt;/body&gt;:</p>
+            <div class="code-block">
+<code>&lt;!-- Script de Captura UTM --&gt;
+&lt;script src="https://seu-dominio.com/path/capture-utm.js"&gt;&lt;/script&gt;</code>
+            </div>
+            <p><strong>Importante:</strong> Altere <code>seu-site-destino.com</code> dentro do script capture-utm.js para seu domínio de destino.</p>
+        </div>
+
+        <h2>PASSO 2: No Domínio de Destino</h2>
+        <div class="step">
+            <h3>Adicione em seu-site-destino.com</h3>
+            <p>No arquivo HTML, adicione antes do closing tag &lt;/body&gt;:</p>
+            <div class="code-block">
+<code>&lt;!-- Script de Leitura UTM --&gt;
+&lt;script src="https://seu-dominio.com/path/read-utm.js"&gt;&lt;/script&gt;</code>
+            </div>
+        </div>
+
+        <h2>PASSO 3: Acessar os Dados no Chat/Edge Function</h2>
+        <div class="step">
+            <h3>No seu código do chat ou edge function:</h3>
+            <div class="code-block">
+<code>// Ler os dados capturados
+const attribution = JSON.parse(localStorage.getItem('leadAttribution') || '{}');
+
+console.log('UTM Source:', attribution.utm_source);
+console.log('UTM Medium:', attribution.utm_medium);
+console.log('UTM Campaign:', attribution.utm_campaign);
+console.log('Referrer:', attribution.referrer);
+
+// Enviar para Supabase
+await supabase
+  .from('leads')
+  .insert({
+    name: formData.name,
+    email: formData.email,
+    utm_source: attribution.utm_source,
+    utm_medium: attribution.utm_medium,
+    utm_campaign: attribution.utm_campaign,
+    utm_content: attribution.utm_content,
+    utm_term: attribution.utm_term,
+    referrer: attribution.referrer
+  });</code>
+            </div>
+        </div>
+
+        <h2>Teste Aqui (Domínio 2)</h2>
+        <p>Clique nos botões abaixo para simular URLs com UTM parameters:</p>
+        <div>
+            <button onclick="simulateUTM('google', 'cpc', 'summer-sale')">
+                Simular: Google CPC
+            </button>
+            <button onclick="simulateUTM('facebook', 'social', 'awareness')">
+                Simular: Facebook Social
+            </button>
+            <button onclick="simulateUTM('newsletter', 'email', 'promo')">
+                Simular: Email Newsletter
+            </button>
+            <button onclick="clearData()">Limpar localStorage</button>
+        </div>
+
+        <h2>Dados Atualmente Armazenados</h2>
+        <p>Pressione o botão acima para simular dados, ou visite essa página com parâmetros UTM:</p>
+        <p><code>?utm_source=google&utm_medium=cpc&utm_campaign=summer-sale</code></p>
+        <div class="data-viewer" id="dataViewer">
+            <div id="dataContent">Nenhum dado capturado ainda...</div>
+        </div>
+
+        <h2>URLs de Exemplo</h2>
+        <div class="code-block">
+<code>https://seu-site-origem.com?utm_source=google&utm_medium=cpc&utm_campaign=summer-sale&utm_content=banner&utm_term=loan</code>
+        </div>
+
+        <h2>Troubleshooting</h2>
+        <ul>
+            <li><strong>Dados não aparecem?</strong> Verifique se o script read-utm.js foi carregado (DevTools > Console)</li>
+            <li><strong>localStorage vazio?</strong> Abra DevTools > Application > LocalStorage e procure por "leadAttribution"</li>
+            <li><strong>Em iframe?</strong> O iframe pode ter seu próprio localStorage. Use postMessage() para comunicação</li>
+        </ul>
+    </div>
+
+    <script src="read-utm.js"></script>
+    <script>
+        function updateDataViewer() {
+            const data = localStorage.getItem('leadAttribution');
+            const viewer = document.getElementById('dataContent');
+
+            if (data) {
+                const parsed = JSON.parse(data);
+                viewer.innerHTML = JSON.stringify(parsed, null, 2);
+                viewer.parentElement.classList.add('success');
+            } else {
+                viewer.innerHTML = 'Nenhum dado capturado ainda...';
+                viewer.parentElement.classList.remove('success');
+            }
+        }
+
+        function simulateUTM(source, medium, campaign) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('utm_source', source);
+            url.searchParams.set('utm_medium', medium);
+            url.searchParams.set('utm_campaign', campaign);
+            url.searchParams.set('timestamp', Date.now());
+            window.history.pushState({}, '', url);
+
+            // Executar o script de leitura
+            const attribution = {
+                utm_source: source,
+                utm_medium: medium,
+                utm_campaign: campaign,
+                utm_content: '',
+                utm_term: '',
+                referrer: document.referrer,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('leadAttribution', JSON.stringify(attribution));
+            updateDataViewer();
+        }
+
+        function clearData() {
+            localStorage.removeItem('leadAttribution');
+            updateDataViewer();
+        }
+
+        // Atualizar ao carregar a página
+        document.addEventListener('DOMContentLoaded', updateDataViewer);
+        setInterval(updateDataViewer, 500);
+    </script>
+</body>
+</html>
