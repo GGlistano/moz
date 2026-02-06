@@ -7,7 +7,7 @@ const API_CONFIG = {
   url: "https://ejfdfllxdbkkhxrmmhkw.supabase.co/functions/v1/create-ticket",
   key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqZmRmbGx4ZGJra2h4cm1taGt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MzMzNDUsImV4cCI6MjA4NDQwOTM0NX0.ffnuENnSmSL-0o_l6EWYqBS0jm-UAq4P8wPPwUTEpXo",
   funnelSlug: "emprestimo",
-  chatBaseUrl: "https://whatsapp-lead-funnel-lst8.bolt.host"
+  chatBaseUrl: "https://chat.txenecamoz.online/"
 };
 
 interface LoanTier {
